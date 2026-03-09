@@ -123,7 +123,7 @@ async def handle_suggestion(m: Message):
         save_post_authors()
 
         # 2. Создаём сообщение с подписью
-        signature = f"\n\n👤<i>{username}</i>"
+        signature = f"\n\n👤{username}"
         if m.text:
             text_with_signature = m.text + signature
             signed = await bot.send_message(
@@ -265,4 +265,5 @@ async def main():
     await dp.start_polling(bot)
 
 if __name__ == "__main__":
+
     asyncio.run(main())
