@@ -1,6 +1,4 @@
-# bot.py — бот для предложений постов и модерации
-# Запуск: python bot.py
-
+# bot_release.py — бот для предложений постов и модерации
 import asyncio
 import logging
 import json
@@ -274,3 +272,4 @@ async def main():
 if __name__ == "__main__":
 
     asyncio.run(main())
+
