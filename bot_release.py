@@ -18,9 +18,13 @@ from aiogram.types import (
 from aiogram.exceptions import TelegramAPIError
 
 # ─── НАСТРОЙКИ (замени на свои значения) ────────────────────────────────────
+# АПИ-токен бота
 BOT_TOKEN = ""
+# Айди админа/ов (предусмотрено несколько)
 ADMIN_IDS = {123,321}
+# Айди канала (НЕ ЗАБУДЬТЕ ДОБАВИТЬ БОТА В АДМИНЫ КАНАЛА)
 CHANNEL_ID = ""
+# Настройка отложенной публикации (в секундах)
 DELAY_BEFORE_POST = 300
 
 ADMIN_CHAT_ID = ADMIN_IDS  # должно быть целым числом
@@ -69,7 +73,7 @@ def get_keyboard(original_msg_id: int, signed_msg_id: int = None) -> InlineKeybo
     Для сообщения с подписью передаём original_msg_id и signed_msg_id.
     """
     if signed_msg_id is None:
-        # Это оригинальное сообщение – не должно быть кнопок, его не модерируем напрямую
+        # Сообщение без подписи
         return None
     else:
         # Сообщение с подписью – привязываем к original_msg_id
@@ -109,7 +113,7 @@ async def handle_suggestion(m: Message):
         return
 
     try:
-        # 1. Копируем оригинальное сообщение в чат админа (без подписи)
+        # Копирует оригинальное сообщение в чат админа (без подписи)
         original = await bot.copy_message(
             chat_id=ADMIN_CHAT_ID,
             from_chat_id=m.chat.id,
@@ -117,7 +121,7 @@ async def handle_suggestion(m: Message):
         )
         logging.info(f"Оригинал скопирован, id={original.message_id}")
 
-        # Запоминаем автора
+        # Запоминает автора
         username = m.from_user.username or f"ID {user_id}"
         post_authors[str(original.message_id)] = {
             "user_id": user_id,
@@ -125,7 +129,7 @@ async def handle_suggestion(m: Message):
         }
         save_post_authors()
 
-        # 2. Создаём сообщение с подписью
+        # 2. Создает сообщение с подписью
         signature = f"\n\n👤<i>{username}</i>"
         if m.text:
             text_with_signature = m.text + signature
@@ -135,7 +139,7 @@ async def handle_suggestion(m: Message):
                 reply_to_message_id=original.message_id
             )
         elif m.caption:
-            # Если есть медиа, копируем его с новым caption
+            # Если есть медиа, копирует его с новым текстом
             signed = await bot.copy_message(
                 chat_id=ADMIN_CHAT_ID,
                 from_chat_id=m.chat.id,
@@ -143,7 +147,7 @@ async def handle_suggestion(m: Message):
                 caption=m.caption + signature
             )
         else:
-            # Например, фото без подписи – добавляем подпись как caption
+            # Например, фото без подписи – добавляет подпись как текст
             signed = await bot.copy_message(
                 chat_id=ADMIN_CHAT_ID,
                 from_chat_id=m.chat.id,
@@ -152,11 +156,11 @@ async def handle_suggestion(m: Message):
             )
         logging.info(f"Сообщение с подписью создано, id={signed.message_id}")
 
-        # Запоминаем связь signed -> original
+        # Запоминает связь signed -> original
         signed_posts[str(signed.message_id)] = original.message_id
         save_signed_posts()
 
-        # 3. Отправляем кнопки под сообщением с подписью
+        # 3. Отправляет кнопки под сообщением с подписью
         await bot.send_message(
             chat_id=ADMIN_CHAT_ID,
             text="Действия с постом:",
@@ -181,7 +185,7 @@ async def on_moderation(c: CallbackQuery):
     original_msg_id = int(parts[1])
     # Для action = ok/anon/now/nowanon/ban/no
 
-    # Получаем информацию об авторе
+    # Получает информацию об авторе
     author_info = post_authors.get(str(original_msg_id))
 
     # Отклонение
@@ -220,7 +224,7 @@ async def on_moderation(c: CallbackQuery):
             await c.answer("Сообщение с подписью не найдено", show_alert=True)
             return
 
-        # Выбираем, что копировать в канал
+        # Выбирает, что копировать в канал
         if is_anon:
             # Анонимно – копируем оригинал (без подписи)
             source_msg_id = original_msg_id
@@ -231,13 +235,13 @@ async def on_moderation(c: CallbackQuery):
             except TelegramAPIError:
                 pass
         else:
-            # С подписью – копируем сообщение с подписью
+            # С подписью – копирует сообщение с подписью
             source_msg_id = signed_msg_id
 
         # Функция публикации
         async def publish():
             if not is_instant:
-                # Ждём
+                # Задержка публикации
                 await asyncio.sleep(DELAY_BEFORE_POST)
             try:
                 published = await bot.copy_message(
@@ -249,10 +253,10 @@ async def on_moderation(c: CallbackQuery):
             except Exception as e:
                 logging.error(f"Ошибка публикации: {e}")
 
-        # Запускаем публикацию
+        # Запускает публикацию
         asyncio.create_task(publish())
 
-        # Обновляем статус в админском чате
+        # Обновляет статус в админском чате
         status_text = "Опубликовано сейчас" if is_instant else f"В очереди (через {DELAY_BEFORE_POST//60} мин)"
         await c.message.edit_text(
             c.message.text + f"\n\n✅ {'Анонимно' if is_anon else 'С подписью'} – {status_text}",
@@ -268,4 +272,5 @@ async def main():
     await dp.start_polling(bot)
 
 if __name__ == "__main__":
+
     asyncio.run(main())
