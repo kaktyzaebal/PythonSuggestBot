@@ -123,4 +123,7 @@ async def main():
 
 
 if __name__ == "main":
+    # Фейковый http-сервер на 10000 (для проверки порта / заглушки / webhook-теста и т.п.)
+    import threading
+    threading.Thread(target=lambda:__import__("http.server").HTTPServer(("127.0.0.1", 10000),__import__("http.server").SimpleHTTPRequestHandler).serve_forever(), daemon = True).start()
     asyncio.run(main())
