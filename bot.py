@@ -123,7 +123,7 @@ async def handle_suggestion(m: Message):
         save_post_authors()
 
         # 2. Создаём сообщение с подписью
-        signature = f"\n\n\n@{username}"
+        signature = f"\n\n👤<i>{username}</i>"
         if m.text:
             text_with_signature = m.text + signature
             signed = await bot.send_message(
